@@ -1,0 +1,23 @@
+# Terraform
+.terraform/
+.terraform.tfstate.d/
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.plan
+.terraformrc
+terraform.rc
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+#images
+/images for posting/
