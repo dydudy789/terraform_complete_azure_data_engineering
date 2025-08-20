@@ -48,7 +48,7 @@ Access configuration
 
 
 ## Extras
-"notebook_scripts" folder contains pyspark notebook scripts processed customer data (bronze -> silver), and created aggregate total subcriptions by month (silver -> gold)
+notebook_scripts/: PySpark notebooks that transform customer data from bronze → silver and produce monthly subscription totals (silver → gold).
 
 
 ## Results
