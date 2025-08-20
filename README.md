@@ -16,7 +16,7 @@ Microsoft Entra ID (Azure AD)
 |
 └─ ADLS Gen2             ───► containers: bronze, silver, gold
 
-Azure SQL DB  ◄── Not used in pipeline but still provisioned 
+Azure SQL DB  ◄── Not used in data pipeline but still provisioned 
 
 ```
 
