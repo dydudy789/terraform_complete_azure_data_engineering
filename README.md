@@ -40,7 +40,11 @@ Access configuration
       - Created an AAD App Registration (SP).
       - Provisioned a matching Databricks service principal (SCIM) and granted it Workspace access and Jobs/Repos permissions
       - register adf managed identity in databricks ws (generated databricks' own id), then assign workspace access through that id
-  - Databricks access to ADLS -> registered app, create service principal and assign Storage Blob Data Contributor to the sp. For cluster access, use oauth with secrets
+  - Databricks access to ADLS
+      - Assigned Storage Blob Data Contributor on ADLS to the SP (authorization)
+      - Stored client_secret, tenant_id, client_id in a Databricks secret scope and set cluster spark.conf for ABFS OAuth (authentication)
+
+
 
 
 ## Extras
