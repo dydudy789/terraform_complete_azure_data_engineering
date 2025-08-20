@@ -26,15 +26,20 @@ Resource groups for dev and prod environments and a managed resource group for D
 
 ADLS Gen2 account with medallion containers (bronze, silver, gold)
 
-Databricks workspace (Standard tier )
+Databricks workspace (Standard tier) with access to ADLS
 
-Azure Data Factory (with linked service to ADLS, SQLDB, and Databricks)
+Azure Data Factory with linked service to ADLS, SQLDB, and Databricks
 
-Azure SQL Database 
+Azure SQL Database with azure aad
 
 Access configuration
-  - ADF access to ADLS -> Storage Blob Contributor role assignment through RBAC managed identity
-  - ADF access to Databricks workspace notebooks  -> register adf managed identity in databricks ws (generated databricks' own id), then assign workspace access through that id
+  - Azure Data Factory access to ADLS
+      - Uses managed identity.
+      - Role assignment: Storage Blob Data Contributor on the ADLS scope.
+  - Azure Data Factory access to Databricks (running notebooks)
+      - Created an AAD App Registration (SP).
+      - Provisioned a matching Databricks service principal (SCIM) and granted it Workspace access and Jobs/Repos permissions
+      - register adf managed identity in databricks ws (generated databricks' own id), then assign workspace access through that id
   - Databricks access to ADLS -> registered app, create service principal and assign Storage Blob Data Contributor to the sp. For cluster access, use oauth with secrets
 
 
