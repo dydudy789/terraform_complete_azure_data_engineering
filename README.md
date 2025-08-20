@@ -1,4 +1,4 @@
-# Terraform platform engineering for data pipelines
+# Terraform platform engineering + data pipelines
 Provision a complete Azure data engineering sandbox with Terraform: Azure Data Lake Storage Gen2 (ADLS), Azure Databricks, Azure Data Factory (ADF), Azure SQL Database, and the required identities/permissions between them.
 
 Scope: setup for DEV/PROD environments. 
