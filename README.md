@@ -37,33 +37,26 @@ Azure SQL Database
 
 
 ## Results
-Dev resources
+**Dev resources created**
 <img width="1473" height="704" alt="dev-rg" src="https://github.com/user-attachments/assets/7cd2822d-7e4e-456e-80c9-82f69549a339" />
 
-
-Prod resources
+**Prod resources created**
 <img width="1490" height="682" alt="prod-rg" src="https://github.com/user-attachments/assets/aab29192-9028-4ae7-8bba-d809d726ed90" />
 
-Datalake with medallion folders
+**Datalake created with medallion folders**
 <img width="2505" height="603" alt="datalake_medallion_folders" src="https://github.com/user-attachments/assets/da81c5c9-b4e6-4c66-af70-d15204a85670" />
 
-ADF with linked services 
-
+**ADF created with linked services **
 <img width="2532" height="696" alt="adf_linked_services" src="https://github.com/user-attachments/assets/dd53c8bb-74f7-409f-996b-5bd8d2900efd" />
 
-Example script
-
-<img width="1224" height="1232" alt="subscribers_by_month_script" src="https://github.com/user-attachments/assets/ebc30d0b-4696-46fb-bce9-ca875a80f486" />
-
-ADF Pipeline run successful
-
+**ADF pipeline run successful showing access to databricks and ADLS**
 <img width="2536" height="1123" alt="adf_pipeline_successful" src="https://github.com/user-attachments/assets/43817cd1-b35d-4b20-bf2e-f0d390b92452" />
 
-Subscribers by month table created
+**Subscribers by month script that was used in the pipeline**
+<img width="1224" height="1232" alt="subscribers_by_month_script" src="https://github.com/user-attachments/assets/ebc30d0b-4696-46fb-bce9-ca875a80f486" />
 
-
-
-
+**Subscribers by month result saved to gold container**
+<img width="2439" height="1225" alt="databricks_subscribers_by_month" src="https://github.com/user-attachments/assets/e5f8caa7-6d95-4f4b-aae6-37eef4a0a25b" />
 
 
 
