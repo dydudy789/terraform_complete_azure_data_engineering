@@ -20,17 +20,23 @@ Azure SQL DB  ◄── Not used in pipeline but still provisioned
 
 ```
 
-## What this repo creates
+## What this repo creates and additional notes
 
 Resource groups for dev and prod environments and a managed resource group for Databricks
 
 ADLS Gen2 account with medallion containers (bronze, silver, gold)
 
-Databricks workspace (Standard by default)
+Databricks workspace (Standard tier )
 
 Azure Data Factory (with linked service to ADLS, SQLDB, and Databricks)
 
 Azure SQL Database 
+
+Access configuration
+  - ADF access to ADLS -> Storage Blob Contributor role assignment through RBAC managed identity
+  - ADF access to Databricks workspace notebooks  -> register adf managed identity in databricks ws (generated databricks' own id), then assign workspace access through that id
+  - Databricks access to ADLS -> registered app, create service principal and assign Storage Blob Data Contributor to the sp. For cluster access, use oauth with secrets
+
 
 ## Extras
 "notebook_scripts" folder contains pyspark notebook scripts processed customer data (bronze -> silver), and created aggregate total subcriptions by month (silver -> gold)
