@@ -43,6 +43,7 @@ Access configuration
   - Databricks access to ADLS
       - Assigned Storage Blob Data Contributor on ADLS to the SP (authorization)
       - Stored client_secret, tenant_id, client_id in a Databricks secret scope and set cluster spark.conf for ABFS OAuth (authentication)
+      - If unity catalog was enabled (premium required) then databricks connector can be used for easier connections.
 
 
 
