@@ -1,108 +1,79 @@
-## terraform_complete_azure_data_engineering
-Using Terraform create Azure resources including ADLS, Databricks, Azure Data Factory, and Azure SQL DB. Also give permissions between resources. Then build a basic pipeline.
+# Terraform platform engineering + data pipelines
+Provision a complete Azure data engineering sandbox with Terraform: Azure Data Lake Storage Gen2 (ADLS), Azure Databricks, Azure Data Factory (ADF), Azure SQL Database, and the required identities/permissions between them.
 
-> **Note:** Unity Catalog + Access Connector require **Databricks Premium (or higher)**.
+Scope: setup for DEV/PROD environments. 
 
-```text
+## Architecture (high level)
+``` text
 Microsoft Entra ID (Azure AD)
 |
-├─ App Registration  → the app’s login name (client_id)
-|   ├─ application_id (client_id) – use when the app signs in with a secret/cert, or when registering it in Databricks
-|   |     e.g. Databricks SCIM registration:
-|   |         application_id = data.azuread_service_principal.adf_mi.application_id
-|   |     (or if you created your own app)
-|   |         application_id = azuread_application.dbx_to_adls_app.application_id
-|   └─ object_id – the “row ID” of this app in Entra; used when creating a client-secret
-|         e.g. create a secret:
-|             resource "azuread_application_password" "dbx_to_adls_secret" {
-|               application_object_id = azuread_application.dbx_to_adls_app.object_id
-|               display_name          = "client-secret"
-|               end_date_relative     = "8760h"
-|             }
+├─ App Registration      ───► Service Principal    → Azure RBAC on resources
+|                     (used by Terraform/ADF/Databricks as needed)
 |
-└─ Service Principal  → the app’s account in your tenant (used for Azure RBAC)
-    ├─ object_id – paste into Azure RBAC role assignments (who gets access)
-    |     e.g. grant ADLS access:
-    |         resource "azurerm_role_assignment" "adls_blob_contributor_for_dbx_sp" {
-    |           scope                = azurerm_storage_account.dl.id
-    |           role_definition_name = "Storage Blob Data Contributor"
-    |           principal_id         = azuread_service_principal.dbx_to_adls_sp.object_id
-    |           skip_service_principal_aad_check = true
-    |         }
-    └─ application_id (client_id) – points back to the App Registration (same “username”)
+├─ ADF                   ───► triggers pipelines and databricks notebooks
+|
+├─ Databricks workspace  ───► reads/writes ADLS, runs notebooks
+|
+└─ ADLS Gen2             ───► containers: bronze, silver, gold
 
-Azure resources
-|
-├─ ADF (system-assigned Managed Identity)
-|   ├─ principal_id – the built-in account for ADF (internally an SP id)
-|   |     e.g. ADF → ADLS (no secrets; just RBAC):
-|   |         resource "azurerm_role_assignment" "adf_storage_contrib" {
-|   |           scope                = azurerm_storage_account.dl.id
-|   |           role_definition_name = "Storage Blob Data Contributor"
-|   |           principal_id         = azurerm_data_factory.adf.identity[0].principal_id
-|   |         }
-|   └─ (optional) look up ADF’s identity as a Service Principal to get its application_id:
-|         data "azuread_service_principal" "adf_mi" {
-|           object_id = azurerm_data_factory.adf.identity[0].principal_id
-|         }
-|
-└─ ADLS storage account
-    └─ id – the Azure resource path; use as the role assignment scope
-          e.g. scope = azurerm_storage_account.dl.id
+Azure SQL DB  ◄── Not used in data pipeline but still provisioned 
 
-Databricks workspace
-|
-├─ Databricks Service Principal (SCIM record)
-|   ├─ id (Databricks-internal) – use for Databricks entitlements/grants
-|   |     e.g. register ADF MI in Databricks:
-|   |         resource "databricks_service_principal" "registered_adf_mi" {
-|   |           application_id = data.azuread_service_principal.adf_mi.application_id
-|   |           display_name   = "adf-${var.project}-${var.env}"
-|   |           active         = true
-|   |         }
-|   |     e.g. grant workspace access in Databricks:
-|   |         resource "databricks_entitlements" "adf_mi_workspace_access" {
-|   |           service_principal_id = databricks_service_principal.registered_adf_mi.id
-|   |           workspace_access     = true
-|   |         }
-|   └─ (UC, no secrets) Access Connector Managed Identity:
-|         resource "azurerm_databricks_access_connector" "uc" {
-|           name                = "ac-${var.project}-${var.env}"
-|           resource_group_name = azurerm_resource_group.rg.name
-|           location            = var.location
-|           identity { type = "SystemAssigned" }
-|         }
-|         resource "azurerm_role_assignment" "uc_to_adls" {
-|           scope                = azurerm_storage_account.dl.id
-|           role_definition_name = "Storage Blob Data Contributor"
-|           principal_id         = azurerm_databricks_access_connector.uc.identity[0].principal_id
-|         }
-|         resource "databricks_storage_credential" "adls" {
-|           name = "cred-adls"
-|           azure_managed_identity { access_connector_id = azurerm_databricks_access_connector.uc.id }
-|         }
-|         resource "databricks_external_location" "raw" {
-|           name            = "loc-raw"
-|           url             = "abfss://raw@${azurerm_storage_account.dl.name}.dfs.core.windows.net/"
-|           credential_name = databricks_storage_credential.adls.name
-|         }
-|
-└─ Databricks Secret Scope (stores secrets in the workspace; only needed for SP+secret auth)
-    └─ keys like client-id / client-secret / tenant-id used by cluster spark_conf or notebooks
-          e.g. store OAuth bits:
-              resource "databricks_secret_scope" "adls" { name = "adls-creds" }
-              resource "databricks_secret" "client_id" {
-                scope        = databricks_secret_scope.adls.name
-                key          = "client-id"
-                string_value = azuread_application.dbx_to_adls_app.application_id
-              }
-              resource "databricks_secret" "client_secret" {
-                scope        = databricks_secret_scope.adls.name
-                key          = "client-secret"
-                string_value = azuread_application_password.dbx_to_adls_secret.value
-              }
-              resource "databricks_secret" "tenant_id" {
-                scope        = databricks_secret_scope.adls.name
-                key          = "tenant-id"
-                string_value = data.azurerm_client_config.current.tenant_id
-              }
+```
+
+## What this repo creates and additional notes
+
+Resource groups for dev and prod environments and a managed resource group for Databricks
+
+ADLS Gen2 account with medallion containers (bronze, silver, gold)
+
+Databricks workspace (Standard tier) with access to ADLS
+
+Azure Data Factory with linked service to ADLS, SQLDB, and Databricks
+
+Azure SQL Database with azure aad
+
+Access configuration
+  - Azure Data Factory access to ADLS
+      - Uses managed identity.
+      - Role assignment: Storage Blob Data Contributor on the ADLS scope.
+  - Azure Data Factory access to Databricks (running notebooks)
+      - Created an AAD App Registration (SP).
+      - Provisioned a matching Databricks service principal (SCIM) and granted it Workspace access and Jobs/Repos permissions
+      - register adf managed identity in databricks ws (generated databricks' own id), then assign workspace access through that id
+  - Databricks access to ADLS
+      - Assigned Storage Blob Data Contributor on ADLS to the SP (authorization)
+      - Stored client_secret, tenant_id, client_id in a Databricks secret scope and set cluster spark.conf for ABFS OAuth (authentication)
+      - If unity catalog was enabled (premium required) then databricks connector can be used for easier connections.
+
+
+
+
+## Extras
+notebook_scripts/: PySpark notebooks that transform customer data from bronze → silver and produce monthly subscription totals (silver → gold).
+
+
+## Results
+**Dev resources created**
+<img width="1473" height="704" alt="dev-rg" src="https://github.com/user-attachments/assets/7cd2822d-7e4e-456e-80c9-82f69549a339" />
+
+**Prod resources created**
+<img width="1490" height="682" alt="prod-rg" src="https://github.com/user-attachments/assets/aab29192-9028-4ae7-8bba-d809d726ed90" />
+
+**Datalake created with medallion folders**
+<img width="2505" height="603" alt="datalake_medallion_folders" src="https://github.com/user-attachments/assets/da81c5c9-b4e6-4c66-af70-d15204a85670" />
+
+**ADF created with linked services **
+<img width="2532" height="696" alt="adf_linked_services" src="https://github.com/user-attachments/assets/dd53c8bb-74f7-409f-996b-5bd8d2900efd" />
+
+**ADF pipeline run successful showing access to databricks and ADLS**
+<img width="2536" height="1123" alt="adf_pipeline_successful" src="https://github.com/user-attachments/assets/43817cd1-b35d-4b20-bf2e-f0d390b92452" />
+
+**Subscribers by month script that was used in the pipeline**
+<img width="1224" height="1232" alt="subscribers_by_month_script" src="https://github.com/user-attachments/assets/ebc30d0b-4696-46fb-bce9-ca875a80f486" />
+
+**Subscribers by month result saved to gold container**
+<img width="2439" height="1225" alt="databricks_subscribers_by_month" src="https://github.com/user-attachments/assets/e5f8caa7-6d95-4f4b-aae6-37eef4a0a25b" />
+
+
+
+
