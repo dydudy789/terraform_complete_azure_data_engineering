@@ -29,5 +29,5 @@ provider "azuread" {
 # ---------- Databricks provider (for later when we add notebooks/jobs) ----------
 provider "databricks" {
   auth_type                   = "azure-cli"
-  azure_workspace_resource_id = var.databricks_workspace_id
+  azure_workspace_resource_id = azurerm_databricks_workspace.ws.id
 }

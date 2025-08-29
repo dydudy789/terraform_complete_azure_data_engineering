@@ -13,7 +13,9 @@ variable "sql_admin_password" {
   description = "Temporary SQL admin password."
 }
 
+/*
 variable "databricks_workspace_id" {
   description = "ARM ID of the target Databricks workspace"
   type        = string
 }
+*/

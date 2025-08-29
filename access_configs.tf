@@ -41,6 +41,7 @@ resource "azurerm_role_assignment" "adf_storage_contrib" {
 
 # Look up ADF’s managed identity in Entra ID (Azure AD)
 data "azuread_service_principal" "adf_mi" {
+  depends_on = [time_sleep.wait_mi]
   object_id = azurerm_data_factory.adf.identity[0].principal_id
 }
 
